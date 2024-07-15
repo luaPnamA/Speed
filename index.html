@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyroscope Speedometer</title>
+    <style>
+        /* Styles for the loading screen and main page */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        #logo {
+            display: none;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #settingsMenu {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        #speedometerPage {
+            display: none;
+            text-align: center;
+        }
+        #speed {
+            font-size: 200px;
+            font-family: 'Digital-7 Mono', sans-serif;
+        }
+        #unit {
+            font-size: 40px;
+            font-family: 'Digital-7 Mono', sans-serif;
+        }
+        /* Themes */
+        .dark {
+            background-color: #000;
+            color: #fff;
+        }
+        .light {
+            background-color: #fff;
+            color: #000;
+        }
+        .matrix {
+            background-color: #000;
+            color: #0f0;
+        }
+    </style>
+</head>
+<body class="dark">
+    <img id="logo" src="logo.png" alt="Logo">
+    <div id="speedometerPage">
+        <div id="speed">0.0</div>
+        <div id="unit">km/h</div>
+        <button id="speedSettingsButton" class="button">Settings</button>
+    </div>
+    <div id="settingsMenu">
+        <button id="backButton" class="button"><</button>
+        <div>
+            <label>Theme:</label>
+            <select id="themeSelect">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="matrix">Matrix</option>
+            </select>
+        </div>
+        <div>
+            <label>Units:</label>
+            <select id="unitSelect">
+                <option value="kmh">km/h</option>
+                <option value="mph">mph</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const logo = document.getElementById('logo');
+            const settingsMenu = document.getElementById('settingsMenu');
+            const backButton = document.getElementById('backButton');
+            const themeSelect = document.getElementById('themeSelect');
+            const unitSelect = document.getElementById('unitSelect');
+            const speedometerPage = document.getElementById('speedometerPage');
+            const speedDisplay = document.getElementById('speed');
+            const unitDisplay = document.getElementById('unit');
+            const speedSettingsButton = document.getElementById('speedSettingsButton');
+
+            // Show logo and speedometer page after loading
+            setTimeout(() => {
+                logo.style.display = 'none';
+                speedometerPage.style.display = 'block';
+                updateSpeed();
+            }, 2000);
+
+            // Handle Settings button click from speedometer page
+            speedSettingsButton.addEventListener('click', () => {
+                settingsMenu.style.display = 'flex';
+                speedometerPage.style.display = 'none';
+            });
+
+            // Handle Back button click in Settings
+            backButton.addEventListener('click', () => {
+                settingsMenu.style.display = 'none';
+                speedometerPage.style.display = 'block';
+            });
+
+            // Handle theme change
+            themeSelect.addEventListener('change', (event) => {
+                document.body.className = event.target.value;
+            });
+
+            // Handle unit change
+            unitSelect.addEventListener('change', (event) => {
+                unitDisplay.innerText = event.target.value;
+            });
+
+            // Function to update speed
+            function updateSpeed() {
+                if ('DeviceMotionEvent' in window) {
+                    let lastTime;
+                    let speed = 0;
+                    let lastVelocity = { x: 0, y: 0, z: 0 };
+
+                    window.addEventListener('devicemotion', function (event) {
+                        const currentTime = event.timeStamp;
+                        const acceleration = event.acceleration;
+
+                        if (lastTime && acceleration.x !== null) {
+                            const deltaTime = (currentTime - lastTime) / 1000; // in seconds
+                            const velocity = {
+                                x: lastVelocity.x + acceleration.x * deltaTime,
+                                y: lastVelocity.y + acceleration.y * deltaTime,
+                                z: lastVelocity.z + acceleration.z * deltaTime
+                            };
+
+                            const deltaV = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
+                            speed += deltaV * deltaTime;
+
+                            const isKmh = unitSelect.value === 'kmh';
+                            const displaySpeed = isKmh ? (speed * 3.6).toFixed(1) : (speed * 2.23694).toFixed(1);
+
+                            speedDisplay.innerText = displaySpeed;
+
+                            lastVelocity = velocity;
+                        }
+
+                        lastTime = currentTime;
+                    });
+                } else {
+                    speedDisplay.innerText = 'Not supported';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
