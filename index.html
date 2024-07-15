@@ -105,7 +105,7 @@
             setTimeout(() => {
                 logo.style.display = 'none';
                 speedometerPage.style.display = 'block';
-                updateSpeed();
+                requestPermissions();
             }, 2000);
 
             // Handle Settings button click from speedometer page
@@ -130,9 +130,34 @@
                 unitDisplay.innerText = event.target.value;
             });
 
-            // Function to update speed
+            // Function to request permissions
+            function requestPermissions() {
+                if (navigator.permissions) {
+                    navigator.permissions.query({name: 'accelerometer'}).then(result => {
+                        if (result.state !== 'granted') {
+                            alert('Permission for accelerometer not granted!');
+                        }
+                    });
+                    navigator.permissions.query({name: 'gyroscope'}).then(result => {
+                        if (result.state !== 'granted') {
+                            alert('Permission for gyroscope not granted!');
+                        }
+                    });
+                    navigator.permissions.query({name: 'geolocation'}).then(result => {
+                        if (result.state !== 'granted') {
+                            alert('Permission for geolocation not granted!');
+                        } else {
+                            updateSpeedWithGPS();
+                        }
+                    });
+                } else {
+                    alert('Permissions API not supported!');
+                }
+            }
+
+            // Function to update speed using accelerometer and gyroscope
             function updateSpeed() {
-                if ('DeviceMotionEvent' in window) {
+                if ('DeviceMotionEvent' in window && 'DeviceOrientationEvent' in window) {
                     let lastTime;
                     let speed = 0;
                     let lastVelocity = { x: 0, y: 0, z: 0 };
@@ -164,6 +189,25 @@
                     });
                 } else {
                     speedDisplay.innerText = 'Not supported';
+                }
+            }
+
+            // Function to update speed using GPS
+            function updateSpeedWithGPS() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.watchPosition(function (position) {
+                        const speed = position.coords.speed; // speed in m/s
+                        const isKmh = unitSelect.value === 'kmh';
+                        const displaySpeed = isKmh ? (speed * 3.6).toFixed(1) : (speed * 2.23694).toFixed(1);
+                        speedDisplay.innerText = displaySpeed;
+                    }, function (error) {
+                        alert('Error getting location: ' + error.message);
+                    }, {
+                        enableHighAccuracy: true,
+                        maximumAge: 1000
+                    });
+                } else {
+                    speedDisplay.innerText = 'Geolocation not supported';
                 }
             }
         });
